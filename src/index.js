@@ -27,18 +27,26 @@ export default class ImmuLevel {
 
   }
 
+  set() {
+
+  }
+
   setIn(path = [], obj = {}) {
 
     return new Promise(function(resolve,reject) {
 
       // TODO: consider optimization using a writeStream ??
       if(Array.isArray(obj))
-        return this.batch(key_path.map((data) => ({ type: 'setIn', path: key_path, data: data })));
+        return this.__batch(key_path.map((data) => ({ type: 'setIn', path: key_path, data: data })));
 
-      // TODO: search for 'fn' in _write method
-      this._write(null, path, obj, fn);
+      // TODO: search for 'fn' in __write method
+      this.__write(null, path, obj, fn);
 
     });
+
+  }
+
+  get() {
 
   }
 
@@ -116,6 +124,10 @@ export default class ImmuLevel {
 
   }
 
+  keys() {
+
+  }
+
   keysIn(path, fn) {
 
     streamToArray(this.__db.createReadStream({
@@ -138,6 +150,10 @@ export default class ImmuLevel {
 
   }
 
+  delete() {
+
+  }
+
   deleteIn(path, opts, fn) {
 
     if (typeof opts == 'function') {
@@ -147,7 +163,7 @@ export default class ImmuLevel {
 
     }
 
-    var batch = opts.batch || this.__db.batch();
+    var batch = opts.__batch || this.__db.__batch();
 
     streamToArray(this.__db.createKeyStream({
 
@@ -165,7 +181,7 @@ export default class ImmuLevel {
 
       });
 
-      if (opts.batch)
+      if (opts.__batch)
         fn();
 
       else batch.write(fn);
@@ -174,7 +190,7 @@ export default class ImmuLevel {
 
   }
 
-  _write(batch, key, obj, fn) {
+  __write(batch, key, obj, fn) {
 
     // use arrow functions to eliminate need for assignment of 'this'
     var self = this;
@@ -189,14 +205,14 @@ export default class ImmuLevel {
 
         keys.forEach((k) => {
           // recurse ???
-          this._write(batch, key.concat(k), obj[k], next);
+          this.__write(batch, key.concat(k), obj[k], next);
         });
 
         break;
 
       case 'array':
 
-        this._write(batch, key, arrToObj(obj), fn);
+        this.__write(batch, key, arrToObj(obj), fn);
 
         break;
 
@@ -210,10 +226,10 @@ export default class ImmuLevel {
 
   }
 
-  batch(ops, fn) {
+  __batch(ops, fn) {
 
     var self = this;
-    var batch = this.__db.batch();
+    var batch = this.__db.__batch();
     var next = after(ops.length, function(err){
       if (err) return fn(err);
       batch.write(fn);

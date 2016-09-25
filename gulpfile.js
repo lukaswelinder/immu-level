@@ -1,12 +1,12 @@
+'use strict';
+
 const gulp = require('gulp'),
       tape = require('gulp-tape'),
       tap_colorize = require('tap-colorize'),
       nodemon = require('gulp-nodemon'),
-      sequence = require('gulp-sequence');
+      sequence = require('gulp-sequence'),
+      rollupBundle = require('./rollup');
 
-const rollupBundle = require('./rollup');
-
-let cache = null;
 
 gulp.task('bundle', rollupBundle);
 
@@ -21,5 +21,3 @@ gulp.task('dev', ['build'], () =>
     watch: ['sandbox.js', 'spec/*.js', 'src/**/*.js'],
     tasks: ['build']
   }));
-
-function dev() { return sequence('bundle', 'test'); }
