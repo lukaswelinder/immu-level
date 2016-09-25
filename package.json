@@ -1,0 +1,56 @@
+{
+  "name": "immu-level",
+  "version": "0.0.1",
+  "description": "Immutable.js meets LevelDB",
+  "main": "dist/bundle.umd.js",
+  "jsnext:main": "dist/bundle.es2015.js",
+  "scripts": {
+    "test": "gulp test",
+    "dev": "gulp dev"
+  },
+  "keywords": [
+    "immutable.js",
+    "graph",
+    "tree",
+    "database",
+    "db",
+    "levelup",
+    "leveldb",
+    "level.js"
+  ],
+  "author": "lukaswelinder",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lukaswelinder/web-db.git"
+  },
+  "dependencies": {
+    "after": "^0.8.2",
+    "assert": "^1.4.1",
+    "bytewise": "^1.1.0",
+    "component-type": "^1.2.1",
+    "immutable": "^3.8.1",
+    "level": "^1.4.0",
+    "level-js": "^2.2.4",
+    "level-pathwise": "^3.0.3",
+    "leveldown": "^1.4.6",
+    "levelup": "^1.3.2",
+    "levelup-defaults": "^2.0.0",
+    "stream-to-array": "^2.3.0"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-nodemon": "^2.1.0",
+    "gulp-sequence": "^0.4.5",
+    "gulp-tape": "0.0.9",
+    "gulp-watch": "^4.3.9",
+    "rollup": "^0.34.10",
+    "rollup-plugin-buble": "^0.13.0",
+    "rollup-plugin-commonjs": "^3.3.1",
+    "rollup-plugin-node-resolve": "^2.0.0",
+    "rollup-plugin-strip": "^1.1.1",
+    "rollup-plugin-uglify": "^1.0.1",
+    "tap-colorize": "^1.2.0",
+    "tape": "^4.6.0"
+  }
+}
