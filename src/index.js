@@ -1,26 +1,32 @@
 import assert from 'assert'
 import defaults from 'levelup-defaults'
 import bytewise from 'bytewise'
+import LevelDefaults from 'levelup-defaults'
+
 import type from 'component-type'
 import after from 'after'
 
-// TODO: cut back on dependencies and complete refactor to ES6
+import { Record, Map, List, Set, fromJS } from 'immutable'
 
-export default class ImmuLevel {
+const ImmuLevelProps = Record({
+  __root: List(),
+  __db: null,
+  __cache: null
+});
 
-  constructor(db) {
+export default class ImmuLevel extends ImmuLevelProps {
+
+  constructor(db, opts = {}) {
+
+    if(!db)
+      throw 'LevelDB instance required...';
 
     if(!(this instanceof Pathwise))
       return new ImmuLevel(db);
 
-    // does this really warrant a dependency ???
-    assert(db, 'db required');
-
-    this.__db = defaults(db, {
-
-      keyEncoding: bytewise,
-      valueEncoding: 'json'
-
+    super({
+      __root: List(opts.root || []),
+      __db: LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' })
     });
 
     return this;
@@ -40,7 +46,7 @@ export default class ImmuLevel {
         return this.__batch(key_path.map((data) => ({ type: 'setIn', path: key_path, data: data })));
 
       // TODO: search for 'fn' in __write method
-      this.__write(null, path, obj, fn);
+      this.__write(path, obj);
 
     });
 
@@ -190,39 +196,44 @@ export default class ImmuLevel {
 
   }
 
-  __write(batch, key, obj, fn) {
+  // TODO: create '__format_batch' method
+  __write(path, val, fn) {
 
     // use arrow functions to eliminate need for assignment of 'this'
-    var self = this;
 
-    switch(type(obj)) {
+    return new Promise(function(resolve, reject) {
 
-      case 'object':
+      switch(type(val)) {
 
-        var keys = Object.keys(obj);
-        // iterate over all keys then invoke callback
-        var next = after(keys.length, fn);
+        case 'object':
 
-        keys.forEach((k) => {
-          // recurse ???
-          this.__write(batch, key.concat(k), obj[k], next);
-        });
+          let keys = Object.keys(val);
+          let next = after(keys.length, resolve);
 
-        break;
+          keys.forEach((k) => {
+            // recurse ???
+            this.__write(path.push(k), val[k], next);
+          });
 
-      case 'array':
+          break;
 
-        this.__write(batch, key, arrToObj(obj), fn);
+        case 'array':
 
-        break;
+          this.__write(path, arrToObj(val), fn);
 
-      default:
+          break;
 
-        batch.setIn(key, obj);
+        default:
 
-        break;
+          this.__db.put(path, val, fn);
 
-    }
+          break;
+
+      }
+
+    });
+
+
 
   }
 
@@ -244,12 +255,4 @@ export default class ImmuLevel {
 
   }
 
-}
-
-function arrToObj(arr){
-  var obj = {};
-  arr.forEach(function(el, idx){
-    obj[idx] = el;
-  });
-  return obj;
 }
