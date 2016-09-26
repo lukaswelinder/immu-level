@@ -12,9 +12,11 @@ export function coerceToMap(obj) {
   if(typeof obj === 'object')
     return fromJS(obj);
 
+  return Map();
+
 }
 
-export function mapKeyPaths(root, obj, ret) {
+export function mapToBatch(root, obj, ret) {
 
   if(!obj)
     obj = root, root = [];
@@ -31,9 +33,13 @@ export function mapKeyPaths(root, obj, ret) {
   return obj.reduce((curr, val, key) => {
 
     if(typeof val === 'object')
-      return mapKeyPaths(root.push(key), val, curr);
+      return mapToBatch(root.push(key), val, curr);
 
-    return curr.set(root.push(key), val);
+    return curr.set(root.push(key), {
+      type: 'put',
+      key: root.push(key).toArray(),
+      value: val
+    });
 
   }, ret);
 
