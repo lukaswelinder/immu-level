@@ -1,26 +1,21 @@
 import bytewise from 'bytewise'
 import LevelDefaults from 'levelup-defaults'
-
-import type from 'component-type'
 import after from 'after'
 
 import { Record, Map, List, Set, fromJS } from 'immutable'
 
-import { mapKeyPaths } from './utils/obj_utils'
+import { coerceToMap, mapToBatch } from './utils/mapHelpers'
+import { coerceToList } from './utils/listHelpers'
 
 const ImmuLevelProps = Record({
-  __root: List(),
   __db: null,
+  __root: null,
   __cache: null
-});
-
-const ImmuLevelOptions = Record({
-  root: List()
 });
 
 export default class ImmuLevel extends ImmuLevelProps {
 
-  constructor(db, opts = new ImmuLevelOptions()) {
+  constructor(db, opt) {
 
     if(!db)
       throw 'LevelDB instance required...';
@@ -28,13 +23,12 @@ export default class ImmuLevel extends ImmuLevelProps {
     if(!(this instanceof Pathwise))
       return new ImmuLevel(db);
 
-    if(!List.isList(opts.root))
-      opts.root = List(opts.root);
+    // TODO: allow for cacheing of 'views' upon initialization based on opt
+    let __db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
+    let __root = coerceToList(opt.root);
+    let __cache = coerceToMap(opt.cache);
 
-    super({
-      __root: opts.root,
-      __db: LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' })
-    });
+    super({ __db, __root, __cache });
 
     return this;
 
@@ -46,10 +40,14 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   setIn(path = [], val = {}) {
 
+    let root = this.__root.concat(coerceToList(path));
+
     return new Promise(function(resolve,reject) {
 
-      // TODO: handle batch input @ path
-      this.__write(path, val);
+      let root = this.__root.concat(path);
+      let data = mapToBatch(root, val);
+
+      this.__db.batch(data, (err) => !err ? resolve(coerceToMap(val)) : reject(err));
 
     });
 
@@ -199,7 +197,27 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  __read() {
+  __read(opt) {
+
+    let root = coerceToList(opt.root);
+
+    let gte = root.toArray();
+    let lte = root.push(undefined).toArray();
+
+    let keys = opt.keys || opt.values ? false : true;
+    let values = opt.values || opt.keys ? false : true;
+
+    let reverse = opt.reverse || false;
+    let fillCache = opt.fillCache || false;
+
+    return this.__db.createReadStream({
+      gte,
+      lte,
+      keys,
+      values,
+      reverse,
+      fillCache
+    });
 
   }
 
