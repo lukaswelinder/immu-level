@@ -1,7 +1,7 @@
 import { Map, List, Set, fromJS } from 'immutable'
 
 
-export function coerceMap(obj) {
+export function coerceToMap(obj) {
 
   if(List.isList(obj))
     return obj.toMap();
@@ -14,7 +14,7 @@ export function coerceMap(obj) {
 
 }
 
-export function mapPaths(root, obj, ret) {
+export function mapKeyPaths(root, obj, ret) {
 
   if(!obj)
     obj = root, root = [];
@@ -26,12 +26,12 @@ export function mapPaths(root, obj, ret) {
     root = List(root);
 
   if(!Map.isMap(obj))
-    obj = coerceMap(obj);
+    obj = coerceToMap(obj);
 
   return obj.reduce((curr, val, key) => {
 
     if(typeof val === 'object')
-      return mapPaths(root.push(key), val, curr);
+      return mapKeyPaths(root.push(key), val, curr);
 
     return curr.set(root.push(key), val);
 

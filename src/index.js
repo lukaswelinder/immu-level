@@ -1,5 +1,3 @@
-import assert from 'assert'
-import defaults from 'levelup-defaults'
 import bytewise from 'bytewise'
 import LevelDefaults from 'levelup-defaults'
 
@@ -8,15 +6,21 @@ import after from 'after'
 
 import { Record, Map, List, Set, fromJS } from 'immutable'
 
+import { mapKeyPaths } from './utils/obj_utils'
+
 const ImmuLevelProps = Record({
   __root: List(),
   __db: null,
   __cache: null
 });
 
+const ImmuLevelOptions = Record({
+  root: List()
+});
+
 export default class ImmuLevel extends ImmuLevelProps {
 
-  constructor(db, opts = {}) {
+  constructor(db, opts = new ImmuLevelOptions()) {
 
     if(!db)
       throw 'LevelDB instance required...';
@@ -24,8 +28,11 @@ export default class ImmuLevel extends ImmuLevelProps {
     if(!(this instanceof Pathwise))
       return new ImmuLevel(db);
 
+    if(!List.isList(opts.root))
+      opts.root = List(opts.root);
+
     super({
-      __root: List(opts.root || []),
+      __root: opts.root,
       __db: LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' })
     });
 
@@ -33,20 +40,16 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  set() {
+  set(key, val) {
 
   }
 
-  setIn(path = [], obj = {}) {
+  setIn(path = [], val = {}) {
 
     return new Promise(function(resolve,reject) {
 
-      // TODO: consider optimization using a writeStream ??
-      if(Array.isArray(obj))
-        return this.__batch(key_path.map((data) => ({ type: 'setIn', path: key_path, data: data })));
-
-      // TODO: search for 'fn' in __write method
-      this.__write(path, obj);
+      // TODO: handle batch input @ path
+      this.__write(path, val);
 
     });
 
@@ -160,7 +163,7 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  deleteIn(path, opts, fn) {
+  deleteIn(path, opts) {
 
     if (typeof opts == 'function') {
 
@@ -183,7 +186,7 @@ export default class ImmuLevel extends ImmuLevelProps {
 
       keys.forEach(function(key){
 
-        batch.deleteIn(key)
+        batch.delteIn(key)
 
       });
 
@@ -196,40 +199,51 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  // TODO: create '__format_batch' method
-  __write(path, val, fn) {
+  __read() {
 
-    // use arrow functions to eliminate need for assignment of 'this'
+  }
+
+  __write(path, val) {
 
     return new Promise(function(resolve, reject) {
 
-      switch(type(val)) {
+      let key_val_map = mapKeyPaths(path, val);
 
-        case 'object':
+      let type = 'put';
 
-          let keys = Object.keys(val);
-          let next = after(keys.length, resolve);
+      let data = key_val_map.reduce((curr, value, key) => {
+        return curr.concat({ type, key, value });
+      }, []);
 
-          keys.forEach((k) => {
-            // recurse ???
-            this.__write(path.push(k), val[k], next);
-          });
+      this.__batch(data);
 
-          break;
-
-        case 'array':
-
-          this.__write(path, arrToObj(val), fn);
-
-          break;
-
-        default:
-
-          this.__db.put(path, val, fn);
-
-          break;
-
-      }
+      // switch(type(val)) {
+      //
+      //   case 'object':
+      //
+      //     let keys = Object.keys(val);
+      //     let next = after(keys.length, resolve);
+      //
+      //     keys.forEach((k) => {
+      //       // recurse ???
+      //       this.__write(path.push(k), val[k], next);
+      //     });
+      //
+      //     break;
+      //
+      //   case 'array':
+      //
+      //     this.__write(path, arrToObj(val), fn);
+      //
+      //     break;
+      //
+      //   default:
+      //
+      //     this.__db.put(path, val, fn);
+      //
+      //     break;
+      //
+      // }
 
     });
 
