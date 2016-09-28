@@ -40,6 +40,8 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   setIn(keyPath = [], val = {}) {
 
+    // TODO: remove value at keyPath if val is an object
+
     return new Promise(function(resolve,reject) {
 
       let root = this.__root.concat(coerceToList(keyPath));
@@ -173,6 +175,15 @@ export default class ImmuLevel extends ImmuLevelProps {
     // Other LevelDB related options; both default to false.
     let reverse = opt.reverse || false;
     let fillCache = opt.fillCache || false;
+    let keyEncoding = opt.keyEncoding || bytewise;
+    let valueEncoding = opt.valueEncoding || 'json';
+
+    // Fetches metadata for given key range.
+    if(opt.meta) {
+      gte = gte.unshift(undefined);
+      lte = lte.unshift(undefined);
+      valueEncoding = bytewise;
+    }
 
     return this.__db.createReadStream({
       gte,
@@ -180,7 +191,9 @@ export default class ImmuLevel extends ImmuLevelProps {
       keys,
       values,
       reverse,
-      fillCache
+      fillCache,
+      keyEncoding,
+      valueEncoding
     });
 
   }
