@@ -59,20 +59,25 @@ export default class ImmuLevel extends ImmuLevelProps {
 
     return new Promise(function(resolve,reject) {
 
-      let ret = Map();
+      let ret = Map(), ref = ret;
       let rootLength = this.__root.size;
 
       this.__stream({ keyPath })
 
         .on('data', (data) => {
 
+          ret = ref;
+
           let key = data.key;
           let val = data.value;
 
           let keyPathLength =  key.length - rootLength;
-          let keyPath = List(data.key).slice(-keyPathLength);
+          let keyPath = keyPathLength ? List(data.key).slice(-keyPathLength) : null;
 
-          ret.setIn(keyPath, val);
+          if(keyPath)
+            ret.setIn(keyPath, val);
+          else
+            ret = val;
 
         })
 
