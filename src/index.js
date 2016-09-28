@@ -38,14 +38,12 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  setIn(path = [], val = {}) {
-
-    let root = this.__root.concat(coerceToList(path));
+  setIn(keyPath = [], val = {}) {
 
     return new Promise(function(resolve,reject) {
 
-      let root = this.__root.concat(path);
-      let data = mapToBatch(root, val);
+      let root = this.__root.concat(coerceToList(keyPath));
+      let data = this.__obj_to_batch(root, val);
 
       this.__db.batch(data, (err) => !err ? resolve(coerceToMap(val)) : reject(err));
 
@@ -57,75 +55,29 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  getIn(path) {
-
-    let ret = {};
-    let el = ret;
+  getIn(keyPath) {
 
     return new Promise(function(resolve,reject) {
 
-      streamToArray(this.__db.createReadStream({
+      let ret = Map();
+      let rootLength = this.__root.size;
 
-        start: path,
-        end: path.concat(undefined) // wtf?
+      this.__stream({ keyPath })
 
-        /* *
-         *
-         * My best guess at what this does:
-         *
-         * Due to the fact that levelDB stores keys lexographically,
-         * by reading a stream between those points, it grabs all
-         * keys with 'path' as a prefix.
-         *
-         * I'm still not sure why 'undefined' is concatenated onto
-         * the path to achieve this. Looking deeper into the 'bytewise'
-         * module might provide more insight.
-         *
-         * */
+        .on('data', (data) => {
 
-      }), (err, data) => {
+          let key = data.key;
+          let val = data.value;
 
-        if (err)
-          return reject(err);
+          let keyPathLength =  key.length - rootLength;
+          let keyPath = List(data.key).slice(-keyPathLength);
 
-        // The 'kv' value is an entry from the db with 'key' & 'value' props.
-        data.forEach(function(kv){
+          ret.setIn(keyPath, val);
 
-          // Resulting array is a key-path array of properties within the original 'path'.
-          let segs = kv.key.slice(path.length);
+        })
 
-          if (segs.length) {
-
-            // favor for loop ?
-            segs.forEach(function(seg, idx){
-
-              if (!el[seg]) {
-                if (idx == segs.length - 1) {
-                  el[seg] = kv.value;
-                } else {
-                  el[seg] = {};
-                }
-              }
-
-              // 'Recursively' builds the object from returned keys & values.
-              el = el[seg];
-
-            });
-
-            el = ret;
-
-          } else {
-
-            // Entry at 'path' is not an object, return its value.
-            ret = kv.value;
-
-          }
-
-        });
-
-        resolve(ret);
-
-      });
+        .on('end', () => resolve(ret))
+        .on('error', (err) => reject(err));
 
     });
 
@@ -197,16 +149,23 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  __read(opt) {
+  __stream(opt = {}) {
 
-    let root = coerceToList(opt.root);
+    // Type safe prefixing of 'ImmuLevel' instance '.__root' property.
+    let cat = (arr) => this.__root.concat(coerceToList(arr));
 
-    let gte = root.toArray();
-    let lte = root.push(undefined).toArray();
+    // keyPath defaults to the value of 'this.__root'.
+    let keyPath = cat(opt.keyPath || []);
 
+    // If set, prefers 'gte'(>=) and 'lte'(<=) paths.
+    let gte = opt.gte ? cat(opt.gte).toArray() : keyPath.toArray();
+    let lte = opt.lte ? cat(opt.lte).toArray() : keyPath.push(undefined).toArray();
+
+    // XOR logic for streaming keys/values.
     let keys = opt.keys || opt.values ? false : true;
     let values = opt.values || opt.keys ? false : true;
 
+    // Other LevelDB related options; both default to false.
     let reverse = opt.reverse || false;
     let fillCache = opt.fillCache || false;
 
@@ -221,69 +180,32 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  __write(path, val) {
+  __obj_to_batch(root, obj, ret) {
 
-    return new Promise(function(resolve, reject) {
+    if(!obj)
+      obj = root, root = [];
 
-      let key_val_map = mapKeyPaths(path, val);
+    if(!ret)
+      ret = Map();
 
-      let type = 'put';
+    if(!List.isList(root))
+      root = List(root);
 
-      let data = key_val_map.reduce((curr, value, key) => {
-        return curr.concat({ type, key, value });
-      }, []);
+    if(!Map.isMap(obj))
+      obj = coerceToMap(obj);
 
-      this.__batch(data);
+    return obj.reduce((curr, val, key) => {
 
-      // switch(type(val)) {
-      //
-      //   case 'object':
-      //
-      //     let keys = Object.keys(val);
-      //     let next = after(keys.length, resolve);
-      //
-      //     keys.forEach((k) => {
-      //       // recurse ???
-      //       this.__write(path.push(k), val[k], next);
-      //     });
-      //
-      //     break;
-      //
-      //   case 'array':
-      //
-      //     this.__write(path, arrToObj(val), fn);
-      //
-      //     break;
-      //
-      //   default:
-      //
-      //     this.__db.put(path, val, fn);
-      //
-      //     break;
-      //
-      // }
+      if(typeof val === 'object')
+        return this.__obj_to_batch(root.push(key), val, curr);
 
-    });
+      return curr.set(root.push(key), {
+        type: 'put',
+        key: root.push(key).toArray(),
+        value: val
+      });
 
-
-
-  }
-
-  __batch(ops, fn) {
-
-    var self = this;
-    var batch = this.__db.__batch();
-    var next = after(ops.length, function(err){
-      if (err) return fn(err);
-      batch.write(fn);
-    });
-
-    ops.forEach(function(op){
-
-      if (op.type == 'setIn') self.setIn(op.path, op.data, { batch: batch }, next);
-      else if (op.type == 'deleteIn') self.deleteIn(op.path, { batch: batch }, next);
-
-    });
+    }, ret);
 
   }
 
