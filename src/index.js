@@ -43,16 +43,18 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  setIn(keyPath = [], val = {}) {
+  setIn(keyPath = List(), val = Map()) {
 
-    // TODO: remove value at keyPath if val is an object
+    // TODO: throw error if keyPath length/size is 0
+
+    // TODO: remove value at keyPath (if exists) if val is an object
 
     return new Promise(function(resolve,reject) {
 
       let root = this.__root.concat(coerceToList(keyPath));
-      let data = this.__write(root, val, (curr, val, keyPath) => curr.push(key, {
+      let data = this.__writeReducer(root, val, (curr, val, keyPath) => curr.push({
         type: 'put',
-        key: keyPath.toArray(),
+        key: keyPath,
         value: val
       }), List());
 
@@ -70,7 +72,7 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  getIn(keyPath) {
+  getIn(keyPath = List()) {
 
     return new Promise(function(resolve,reject) {
 
@@ -103,73 +105,28 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  keys() {
+  __readReducer(root, cb, ret) {
+    
+    return new Promise(function(resolve,reject) {
 
-  }
+      if(typeof root === 'function')
+        ret = cb, cb = root, root = List();
 
-  keysIn(path, fn) {
+      if(!ret)
+        ret = Map();
 
-    streamToArray(this.__db.createReadStream({
+      this.__stream({ root })
+        .on('data', (data) => ret = cb(ret, data.value, data.key))
 
-      start: path,
-      end: path.concat(undefined)
-
-    }), function(err, kv){
-
-      if (err)
-        return fn(err);
-
-      fn(null, kv.map(function(_kv){
-
-        return _kv.key[path.length] || _kv.value;
-
-      }));
+        .on('end', () => resolve(ret))
+        .on('error', (err) => reject(err))
 
     });
 
-  }
-
-  delete() {
 
   }
 
-  deleteIn(path, opts) {
-
-    if (typeof opts == 'function') {
-
-      fn = opts;
-      opts = {};
-
-    }
-
-    var batch = opts.__batch || this.__db.__batch();
-
-    streamToArray(this.__db.createKeyStream({
-
-      start: path,
-      end: path.concat(undefined)
-
-    }), function(err, keys){
-
-      if (err)
-        return fn(err);
-
-      keys.forEach(function(key){
-
-        batch.delteIn(key)
-
-      });
-
-      if (opts.__batch)
-        fn();
-
-      else batch.write(fn);
-
-    });
-
-  }
-
-  __stream(opt = {}) {
+  __stream(opt) {
 
     // Type safe prefixing of 'ImmuLevel' instance '.__root' property.
     let cat = (arr) => this.__root.concat(coerceToList(arr));
@@ -211,10 +168,10 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  __write(root, obj, cb, ret) {
+  __writeReducer(root, obj, cb, ret) {
 
-    if(!obj)
-      obj = root, root = List();
+    if(typeof obj === 'function')
+      cb = obj, obj = root, root = List();
 
     if(!ret)
       ret = List();
@@ -228,12 +185,12 @@ export default class ImmuLevel extends ImmuLevelProps {
     return obj.reduce((curr, val, key) => {
 
       if(typeof val === 'object')
-        return this.__write(root.push(key), val, cb, curr);
+        return this.__writeReducer(root.push(key), val, cb, curr);
 
       if(typeof cb === 'function')
-        return cb(curr, val, key);
+        return cb(curr, val, root.push(key).toArray());
 
-      return curr.push(key, { key: key, value: val })
+      return curr.push(key, { key: root.push(key).toArray(), value: val })
 
     }, ret);
 
