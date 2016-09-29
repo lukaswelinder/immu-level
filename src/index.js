@@ -1,10 +1,9 @@
 import bytewise from 'bytewise'
 import LevelDefaults from 'levelup-defaults'
-import after from 'after'
 
 import { Record, Map, List, Set, fromJS } from 'immutable'
 
-import { coerceToMap, mapToBatch } from './utils/mapHelpers'
+import { coerceToMap } from './utils/mapHelpers'
 import { coerceToList } from './utils/listHelpers'
 
 const ImmuLevelProps = Record({
@@ -12,6 +11,8 @@ const ImmuLevelProps = Record({
   __root: null,
   __cache: null
 });
+
+// TODO: move internal methods/props to their own class class to extend
 
 export default class ImmuLevel extends ImmuLevelProps {
 
@@ -36,6 +37,10 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   set(key, val) {
 
+    let keyPath = key ? List(key) : List();
+
+    return this.setIn(keyPath, val);
+
   }
 
   setIn(keyPath = [], val = {}) {
@@ -45,7 +50,11 @@ export default class ImmuLevel extends ImmuLevelProps {
     return new Promise(function(resolve,reject) {
 
       let root = this.__root.concat(coerceToList(keyPath));
-      let data = this.__obj_to_batch(root, val);
+      let data = this.__write(root, val, (curr, val, keyPath) => curr.push(key, {
+        type: 'put',
+        key: keyPath.toArray(),
+        value: val
+      }), List());
 
       this.__db.batch(data, (err) => !err ? resolve(coerceToMap(val)) : reject(err));
 
@@ -53,7 +62,11 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  get() {
+  get(key) {
+
+    let keyPath = key ? List(key) : List();
+
+    return this.getIn(keyPath);
 
   }
 
@@ -198,16 +211,16 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
-  __obj_to_batch(root, obj, ret) {
+  __write(root, obj, cb, ret) {
 
     if(!obj)
-      obj = root, root = [];
+      obj = root, root = List();
 
     if(!ret)
-      ret = Map();
+      ret = List();
 
     if(!List.isList(root))
-      root = List(root);
+      root = coerceToList(root);
 
     if(!Map.isMap(obj))
       obj = coerceToMap(obj);
@@ -215,13 +228,12 @@ export default class ImmuLevel extends ImmuLevelProps {
     return obj.reduce((curr, val, key) => {
 
       if(typeof val === 'object')
-        return this.__obj_to_batch(root.push(key), val, curr);
+        return this.__write(root.push(key), val, cb, curr);
 
-      return curr.set(root.push(key), {
-        type: 'put',
-        key: root.push(key).toArray(),
-        value: val
-      });
+      if(typeof cb === 'function')
+        return cb(curr, val, key);
+
+      return curr.push(key, { key: key, value: val })
 
     }, ret);
 
