@@ -1,20 +1,12 @@
 import bytewise from 'bytewise'
 import LevelDefaults from 'levelup-defaults'
 
-import { Record, Map, List, Set, fromJS } from 'immutable'
+import { Map, List, Set, fromJS } from 'immutable'
 
-import { coerceToMap } from './utils/mapHelpers'
-import { coerceToList } from './utils/listHelpers'
 
-const ImmuLevelProps = Record({
-  __db: null,
-  __root: null,
-  __cache: null
-});
+import Store from './components/Store'
 
-// TODO: move internal methods/props to their own class class to extend
-
-export default class ImmuLevel extends ImmuLevelProps {
+export default class ImmuLevel extends Store {
 
   constructor(db, opt) {
 
@@ -24,12 +16,7 @@ export default class ImmuLevel extends ImmuLevelProps {
     if(!(this instanceof Pathwise))
       return new ImmuLevel(db);
 
-    // TODO: allow for cacheing of 'views' upon initialization based on opt
-    let __db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
-    let __root = coerceToList(opt.root);
-    let __cache = coerceToMap(opt.cache);
-
-    super({ __db, __root, __cache });
+    super(db, opt);
 
     return this;
 
@@ -45,20 +32,23 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   setIn(keyPath = List(), val = Map()) {
 
-    // TODO: throw error if keyPath length/size is 0
+    // TODO: remove current value at keyPath if argument 'val' is an object
 
-    // TODO: remove value at keyPath (if exists) if val is an object
+    return new Promise((resolve,reject) => {
 
-    return new Promise(function(resolve,reject) {
+      let ret = Map();
+      let type = 'put';
 
-      let root = this.__root.concat(coerceToList(keyPath));
-      let data = this.__writeReducer(root, val, (curr, val, keyPath) => curr.push({
-        type: 'put',
-        key: keyPath,
-        value: val
-      }), List());
+      this.__writeReducer(keyPath, val, (curr, value, key) => {
 
-      this.__db.batch(data, (err) => !err ? resolve(coerceToMap(val)) : reject(err));
+        ret = ret.setIn(keyPath, val);
+
+        return curr.push({ type, key, value });
+
+      }, [])
+
+        .then((data) =>
+          this.__db.batch(data, (err) => !err ? resolve(ret) : reject(err)));
 
     });
 
@@ -72,9 +62,10 @@ export default class ImmuLevel extends ImmuLevelProps {
 
   }
 
+  // TODO: refactor to use '__readReduce()' method on super
   getIn(keyPath = List()) {
 
-    return new Promise(function(resolve,reject) {
+    return new Promise((resolve,reject) => {
 
       let ret = Map(), ref = ret;
       let rootLength = this.__root.size;
@@ -102,97 +93,6 @@ export default class ImmuLevel extends ImmuLevelProps {
         .on('error', (err) => reject(err));
 
     });
-
-  }
-
-  __readReducer(root, cb, ret) {
-    
-    return new Promise(function(resolve,reject) {
-
-      if(typeof root === 'function')
-        ret = cb, cb = root, root = List();
-
-      if(!ret)
-        ret = Map();
-
-      this.__stream({ root })
-        .on('data', (data) => ret = cb(ret, data.value, data.key))
-
-        .on('end', () => resolve(ret))
-        .on('error', (err) => reject(err))
-
-    });
-
-
-  }
-
-  __stream(opt) {
-
-    // Type safe prefixing of 'ImmuLevel' instance '.__root' property.
-    let cat = (arr) => this.__root.concat(coerceToList(arr));
-
-    // keyPath defaults to the value of 'this.__root'.
-    let keyPath = cat(opt.keyPath || []);
-
-    // If set, prefers 'gte'(>=) and 'lte'(<=) paths.
-    let gte = opt.gte ? cat(opt.gte).toArray() : keyPath.toArray();
-    let lte = opt.lte ? cat(opt.lte).toArray() : keyPath.push(undefined).toArray();
-
-    // XOR logic for streaming keys/values.
-    let keys = opt.keys || opt.values ? false : true;
-    let values = opt.values || opt.keys ? false : true;
-
-    // Other LevelDB related options; both default to false.
-    let reverse = opt.reverse || false;
-    let fillCache = opt.fillCache || false;
-    let keyEncoding = opt.keyEncoding || bytewise;
-    let valueEncoding = opt.valueEncoding || 'json';
-
-    // Fetches metadata for given key range.
-    if(opt.meta) {
-      gte = gte.unshift(undefined);
-      lte = lte.unshift(undefined);
-      valueEncoding = bytewise;
-    }
-
-    return this.__db.createReadStream({
-      gte,
-      lte,
-      keys,
-      values,
-      reverse,
-      fillCache,
-      keyEncoding,
-      valueEncoding
-    });
-
-  }
-
-  __writeReducer(root, obj, cb, ret) {
-
-    if(typeof obj === 'function')
-      cb = obj, obj = root, root = List();
-
-    if(!ret)
-      ret = List();
-
-    if(!List.isList(root))
-      root = coerceToList(root);
-
-    if(!Map.isMap(obj))
-      obj = coerceToMap(obj);
-
-    return obj.reduce((curr, val, key) => {
-
-      if(typeof val === 'object')
-        return this.__writeReducer(root.push(key), val, cb, curr);
-
-      if(typeof cb === 'function')
-        return cb(curr, val, root.push(key).toArray());
-
-      return curr.push(key, { key: root.push(key).toArray(), value: val })
-
-    }, ret);
 
   }
 
