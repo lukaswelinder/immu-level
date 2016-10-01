@@ -30,7 +30,7 @@ export default class ImmuLevel extends Store {
 
   }
 
-  setIn(keyPath = List(), val = Map()) {
+  setIn(keyPath = List(), value = Map()) {
 
     // TODO: remove current value at keyPath if argument 'val' is an object
 
@@ -39,16 +39,13 @@ export default class ImmuLevel extends Store {
       let ret = Map();
       let type = 'put';
 
-      this.__writeReducer(keyPath, val, (curr, value, key) => {
+      this.__writeReducer({ keyPath, value }, (curr, value, key) => {
 
-        ret = ret.setIn(keyPath, val);
+        ret = ret.setIn(keyPath, value);
 
         return curr.push({ type, key, value });
 
-      }, [])
-
-        .then((data) =>
-          this.__db.batch(data, (err) => !err ? resolve(ret) : reject(err)));
+      }, []).then((data) => this.__db.batch(data, (err) => !err ? resolve(ret) : reject(err)));
 
     });
 
