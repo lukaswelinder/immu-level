@@ -14,6 +14,7 @@ const StoreBase = Record({
   __cache: null
 });
 
+// TODO: extensively document/annotate internal methods (they are complicated)
 
 export default class Store extends StoreBase {
 
@@ -100,7 +101,7 @@ export default class Store extends StoreBase {
 
   }
 
-  // TODO: handle if opt is Map()
+  // TODO: handle if opt is immutable.Map()
   __stream(opt) {
 
     // keyPath defaults to the value of 'this.__root'.
@@ -146,6 +147,7 @@ export default class Store extends StoreBase {
 
   }
 
+  // TODO: clarify and/or clean up the logic for optional args
   __readReducer(opt, cb, ret) {
 
     return new Promise((resolve,reject) => {

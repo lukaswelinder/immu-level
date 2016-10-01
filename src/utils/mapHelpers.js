@@ -15,32 +15,3 @@ export function coerceToMap(obj) {
   return Map();
 
 }
-
-export function mapToBatch(root, obj, ret) {
-
-  if(!obj)
-    obj = root, root = [];
-
-  if(!ret)
-    ret = Map();
-
-  if(!List.isList(root))
-    root = List(root);
-
-  if(!Map.isMap(obj))
-    obj = coerceToMap(obj);
-
-  return obj.reduce((curr, val, key) => {
-
-    if(typeof val === 'object')
-      return mapToBatch(root.push(key), val, curr);
-
-    return curr.set(root.push(key), {
-      type: 'put',
-      key: root.push(key).toArray(),
-      value: val
-    });
-
-  }, ret);
-
-}

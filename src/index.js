@@ -1,10 +1,4 @@
-import bytewise from 'bytewise'
-import LevelDefaults from 'levelup-defaults'
-
-import { Map, List, Set, fromJS } from 'immutable'
-
-import { coerceToMap } from './utils/mapHelpers'
-import { coerceToList } from './utils/listHelpers'
+import { Map, List } from 'immutable'
 
 
 import Store from './components/Store'
