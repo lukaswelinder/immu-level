@@ -4,8 +4,8 @@ import LevelDefaults from 'levelup-defaults'
 import { Record, Map, List } from 'immutable'
 
 
-import { coerceToMap } from './utils/mapHelpers'
-import { coerceToList } from './utils/listHelpers'
+import { coerceToMap } from '../utils/mapHelpers'
+import { coerceToList } from '../utils/listHelpers'
 
 
 const StoreBase = Record({
