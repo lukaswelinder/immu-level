@@ -100,6 +100,7 @@ export default class Store extends StoreBase {
 
   }
 
+  // TODO: handle if opt is Map()
   __stream(opt) {
 
     // keyPath defaults to the value of 'this.__root'.
@@ -149,11 +150,28 @@ export default class Store extends StoreBase {
 
     return new Promise((resolve,reject) => {
 
-      if(typeof opt === 'function')
-        ret = cb, cb = root, opt = {};
+      let rootLength = this.__root.size;
 
-      if(!ret)
-        ret = Map();
+      if(!opt || typeof opt === 'function')
+        ret = cb, cb = opt, opt = {};
+
+      if(!cb)
+        cb = (curr, value, key) => {
+
+          if(!Map.isMap(curr))
+            return curr;
+
+          let keyPathLength =  key.length - rootLength;
+          let keyPath = keyPathLength ? key.slice(-keyPathLength) : null;
+
+          if(!keyPath)
+            return value;
+
+          return curr.setIn(keyPath, value);
+
+        };
+
+      ret = ret || Map();
 
       this.__stream(opt)
         .on('data', (data) => ret = cb(ret, data.value, data.key))
@@ -169,12 +187,33 @@ export default class Store extends StoreBase {
 
     return new Promise((resolve,reject) => {
 
-      let method = opt.reverse ? '__batchR' : '__batchF';
+      if(!opt.hasOwnProperty('value'))
+        reject(new Error('Missing property \'value\'...'));
 
-      let keyPath = coerceToList(opt.keyPath) || List();
+      let keyPath = coerceToList(opt.keyPath);
       let obj = coerceToMap(opt.value);
 
-      resolve(this[method](keyPath, obj, cb, ret));
+      if(!cb) {
+
+        let type = 'put';
+        let ret = Map();
+
+        this.__db.batch(this.__batchF(keyPath, obj, (curr, value, key) => {
+
+          ret.setIn(key, value);
+
+          return curr.push({ type, key, value });
+
+        }, []), (err) => !err ? resolve(ret) : reject(err));
+
+      } else {
+
+        // TODO: see above ^^^
+        let method = opt.reverse ? '__batchR' : '__batchF';
+
+        resolve(this[method](keyPath, obj, cb, ret));
+
+      }
 
     });
 
