@@ -3,6 +3,9 @@ import LevelDefaults from 'levelup-defaults'
 
 import { Map, List, Set, fromJS } from 'immutable'
 
+import { coerceToMap } from './utils/mapHelpers'
+import { coerceToList } from './utils/listHelpers'
+
 
 import Store from './components/Store'
 
@@ -31,20 +34,9 @@ export default class ImmuLevel extends Store {
 
     // TODO: remove current value at keyPath if argument 'val' is an object
 
-    return new Promise((resolve,reject) => {
+    keyPath = this.__cat_root(keyPath);
 
-      let ret = Map();
-      let type = 'put';
-
-      this.__writeReducer({ keyPath, value }, (curr, value, key) => {
-
-        ret = ret.setIn(keyPath, value);
-
-        return curr.push({ type, key, value });
-
-      }, []).then((data) => this.__db.batch(data, (err) => !err ? resolve(ret) : reject(err)));
-
-    });
+    return this.__writeReducer({ keyPath, value })
 
   }
 
@@ -59,34 +51,9 @@ export default class ImmuLevel extends Store {
   // TODO: refactor to use '__readReduce()' method on super
   getIn(keyPath = List()) {
 
-    return new Promise((resolve,reject) => {
+    keyPath = this.__cat_root(keyPath);
 
-      let ret = Map(), ref = ret;
-      let rootLength = this.__root.size;
-
-      this.__stream({ keyPath })
-
-        .on('data', (data) => {
-
-          ret = ref;
-
-          let key = data.key;
-          let val = data.value;
-
-          let keyPathLength =  key.length - rootLength;
-          let keyPath = keyPathLength ? List(data.key).slice(-keyPathLength) : null;
-
-          if(keyPath)
-            ret.setIn(keyPath, val);
-          else
-            ret = val;
-
-        })
-
-        .on('end', () => resolve(ret))
-        .on('error', (err) => reject(err));
-
-    });
+    return this.__readReducer({ keyPath });
 
   }
 
