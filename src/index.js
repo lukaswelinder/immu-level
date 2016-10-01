@@ -10,11 +10,8 @@ export default class ImmuLevel extends Store {
 
   constructor(db, opt) {
 
-    if(!db)
-      throw 'LevelDB instance required...';
-
-    if(!(this instanceof Pathwise))
-      return new ImmuLevel(db);
+    if(!(this instanceof ImmuLevel))
+      return new ImmuLevel(db, opt);
 
     super(db, opt);
 

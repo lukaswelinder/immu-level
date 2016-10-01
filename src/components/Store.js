@@ -22,8 +22,8 @@ export default class Store extends StoreBase {
     if(!db)
       throw 'LevelDB instance required...';
 
-    if(!(this instanceof Pathwise))
-      return new ImmuLevel(db);
+    if(!(this instanceof Store))
+      return new Store(db, opt);
 
     // TODO: allow for cacheing of 'views' upon initialization based on opt
     let __db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
