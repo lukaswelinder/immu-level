@@ -1,6 +1,5 @@
 import { Map, List, Set, fromJS } from 'immutable'
 
-
 export function coerceToMap(obj) {
 
   if(List.isList(obj))

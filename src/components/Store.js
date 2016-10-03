@@ -171,7 +171,7 @@ export default class Store extends StoreBase {
 
           return curr.setIn(keyPath, value);
 
-        };
+        }, ret = Map();
 
       ret = ret || Map();
 

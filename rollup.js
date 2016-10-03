@@ -5,16 +5,16 @@ const rollup = require('rollup'),
       commonjs = require('rollup-plugin-commonjs'),
       node_resolve = require('rollup-plugin-node-resolve');
 
-let cache = null;
+var cache = null;
 function rollupBundle() {
 
   return rollup.rollup({
 
-    entry: 'src/index.js',
+    entry: './src/index.js',
 
-    external: ['immutable'],
+    external: ['immutable','levelup'],
 
-    globals: { immutable: 'immutable' },
+    globals: { immutable: 'immutable', levelup: 'levelup' },
 
     cache: cache,
 
@@ -23,6 +23,7 @@ function rollupBundle() {
       buble(),
 
       node_resolve({
+        preferBuiltins: false,
         module: true,
         jsnext: true,
         main: true,
@@ -75,4 +76,4 @@ function rollupBundle() {
 
 }
 
-module.exports = rollupBundle();
+module.exports = rollupBundle;
