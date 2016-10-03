@@ -8,15 +8,15 @@ import { coerceToMap } from '../utils/mapHelpers'
 import { coerceToList } from '../utils/listHelpers'
 
 
-const StoreBase = Record({
-  __db: null,
-  __root: null,
-  __cache: null
-});
+// const StoreBase = Record({
+//   __db: null,
+//   __root: null,
+//   __cache: null
+// });
 
 // TODO: extensively document/annotate internal methods (they are complicated)
 
-export default class Store extends StoreBase {
+export default class Store {
 
   constructor(db, opt = {}) {
 
@@ -27,11 +27,16 @@ export default class Store extends StoreBase {
       return new Store(db, opt);
 
     // TODO: allow for cacheing of 'views' upon initialization based on opt
-    let __db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
-    let __root = coerceToList(opt.root);
-    let __cache = coerceToMap(opt.cache);
 
-    super({ __db, __root, __cache });
+    // let __db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
+    // let __root = coerceToList(opt.root || []);
+    // let __cache = coerceToMap(opt.cache);
+
+    // super({ __db, __root, __cache });
+
+    this.__db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
+    this.__root = coerceToList(opt.root || []);
+    this.__cache = coerceToMap(opt.cache);
 
     return this;
 
@@ -61,13 +66,13 @@ export default class Store extends StoreBase {
 
     return obj.reduce((curr, val, key) => {
 
-      if(typeof val === 'object')
+      if(val && typeof val === 'object')
         return this.__batchF(keyPath.push(key), val, cb, curr);
 
       if(typeof cb === 'function')
         return cb(curr, val, keyPath.push(key).toArray());
 
-      return curr.push(key, { key: keyPath.push(key).toArray(), value: val })
+      return curr.push({ key: keyPath.push(key).toArray(), value: val })
 
     }, ret);
 
@@ -89,13 +94,13 @@ export default class Store extends StoreBase {
 
     return obj.reduceRight((curr, val, key) => {
 
-      if(typeof val === 'object')
+      if(val && typeof val === 'object')
         return this.__batchR(keyPath.push(key), val, cb, curr);
 
       if(typeof cb === 'function')
         return cb(curr, val, keyPath.push(key).toArray());
 
-      return curr.push(key, { key: keyPath.push(key).toArray(), value: val })
+      return curr.push({ key: keyPath.push(key).toArray(), value: val })
 
     }, ret);
 
@@ -202,9 +207,11 @@ export default class Store extends StoreBase {
 
         this.__db.batch(this.__batchF(keyPath, obj, (curr, value, key) => {
 
-          ret.setIn(key, value);
+          ret = ret.setIn(key, value);
 
-          return curr.push({ type, key, value });
+          curr.push({ type, key, value });
+
+          return curr;
 
         }, []), (err) => !err ? resolve(ret) : reject(err));
 

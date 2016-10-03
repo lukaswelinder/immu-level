@@ -12,9 +12,9 @@ function rollupBundle() {
 
     entry: './src/index.js',
 
-    external: ['immutable','levelup'],
+    external: ['immutable','level', 'levelup', 'bytewise'],
 
-    globals: { immutable: 'immutable', levelup: 'levelup' },
+    globals: { immutable: 'immutable' },
 
     cache: cache,
 
@@ -32,7 +32,7 @@ function rollupBundle() {
 
       commonjs({
         include: 'node_modules/**',
-        namedExports: { immutable: ['Record', 'fromJS', 'Map', 'List', 'Set'] }
+        namedExports: { immutable: ['Record', 'fromJS', 'Map', 'List', 'Set'], level: 'level', levelup: 'levelup', bytewise: 'bytewise' }
       })
 
     ]

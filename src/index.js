@@ -30,7 +30,7 @@ export default class ImmuLevel extends Store {
 
     keyPath = this.__cat_root(keyPath);
 
-    return this.__writeReducer({ keyPath, value })
+    return this.__writeReducer({ keyPath, value });
 
   }
 

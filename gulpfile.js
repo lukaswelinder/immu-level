@@ -17,7 +17,7 @@ gulp.task('build', sequence('bundle', 'test'));
 
 gulp.task('dev', ['build'], () =>
   nodemon({
-    script: 'sandbox.js',
-    watch: ['sandbox.js', 'spec/*.js', 'src/**/*.js'],
+    script: 'sandbox/sandbox.js',
+    watch: ['sandbox/sandbox.js', 'spec/*.js', 'src/**/*.js'],
     tasks: ['build']
   }));
