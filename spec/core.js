@@ -6,7 +6,8 @@ const immutable = require('immutable');
 const ImmuLevel = require('../dist/bundle.umd.js');
 
 const levelup = require('level');
-const db = levelup('./db');
+// Why is this relative to project root? hmm
+const db = levelup('./spec/db');
 
 tape('Constructor:', function(t) {
 
@@ -54,4 +55,5 @@ tape('Public Methods:', function(t) {
 
 });
 
+db.close();
 
