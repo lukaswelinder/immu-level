@@ -5,8 +5,8 @@ const immutable = require('immutable');
 
 const ImmuLevel = require('../dist/bundle.umd.js');
 
-const level = require('level');
-const db = level('./data/level.db');
+const levelup = require('level');
+const db = levelup('./db');
 
 tape('Constructor:', function(t) {
 

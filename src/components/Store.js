@@ -18,7 +18,7 @@ const StoreBase = Record({
 
 export default class Store extends StoreBase {
 
-  constructor(db, opt) {
+  constructor(db, opt = {}) {
 
     if(!db)
       throw 'LevelDB instance required...';
