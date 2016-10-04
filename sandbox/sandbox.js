@@ -39,4 +39,4 @@ const immu = ImmuLevel(db);
 //   .then(val => console.log(val))
 //   .catch(err => console.log(err));
 
-// immu.getIn([]).then(val => console.log(val)).catch(err => console.log(err));
+immu.getIn(['test','eyy']).then(val => console.log(val)).catch(err => console.log(err));

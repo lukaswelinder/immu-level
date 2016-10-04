@@ -14,7 +14,7 @@ function rollupBundle() {
 
     external: ['immutable','level', 'levelup', 'bytewise'],
 
-    globals: { immutable: 'immutable' },
+    globals: { immutable: 'immutable', level: 'level', levelup: 'levelup', bytewise: 'bytewise' },
 
     cache: cache,
 
@@ -55,7 +55,7 @@ function rollupBundle() {
       dest: 'dist/bundle.umd.js',
       format: 'umd',
       // exports: 'named',
-      globals: { immutable: 'immutable' },
+      globals: { immutable: 'immutable', level: 'level', levelup: 'levelup', bytewise: 'bytewise' },
       moduleName: 'ImmuLevel',
       sourceMap: true
     });

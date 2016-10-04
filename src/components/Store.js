@@ -157,28 +157,29 @@ export default class Store {
 
     return new Promise((resolve,reject) => {
 
-      let rootLength = this.__root.size;
-
       if(!opt || typeof opt === 'function')
         ret = cb, cb = opt, opt = {};
 
-      if(!cb)
+      if(!cb) {
+
+        let rootLength = opt.keyPath ?
+          opt.keyPath.length || opt.keyPath.size : this.__root.size;
+
         cb = (curr, value, key) => {
-
-          if(!Map.isMap(curr))
-            return curr;
-
           let keyPathLength =  key.length - rootLength;
           let keyPath = keyPathLength ? key.slice(-keyPathLength) : null;
-
           if(!keyPath)
             return value;
-
           return curr.setIn(keyPath, value);
+        };
 
-        }, ret = Map();
+        ret = Map();
 
-      ret = ret || Map();
+      } else if(!ret) {
+
+        ret = Map();
+
+      }
 
       this.__stream(opt)
         .on('data', (data) => ret = cb(ret, data.value, data.key))
