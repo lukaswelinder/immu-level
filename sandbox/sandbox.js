@@ -22,11 +22,13 @@ const immu = ImmuLevel(db);
 //   value: { test: { case: 'hello', another: 'prop' } }
 // }).then(val => console.log(val)).catch(err => console.log(err));
 
-// immu.setIn([], { next: null, test: { eyy: 'hello', buddy: 'friend' } })
+// immu.setIn(['another'], { next: null, test: { eyy: 'hello', buddy: 'friend' } })
 //   .then(val => console.log(val))
 //   .catch(err => console.log(err));
 
-
+// immu.setIn(['another'],  'testing')
+//   .then(val => console.log(val))
+//   .catch(err => console.log(err));
 
 
 // let m = immutable.Map();
@@ -39,7 +41,7 @@ const immu = ImmuLevel(db);
 //   .then(val => console.log(val))
 //   .catch(err => console.log(err));
 
-// immu.getIn([]).then(val => console.log(val)).catch(err => console.log(err));
+immu.getIn(['another']).then(val => console.log(val)).catch(err => console.log(err));
 
 
 // immu.delete('next').then(val => console.log(val)).catch(err => console.log(err));

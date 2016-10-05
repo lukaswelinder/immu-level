@@ -206,22 +206,35 @@ export default class Store {
         reject(new Error('Missing property \'value\'...'));
 
       let keyPath = coerceToList(opt.keyPath);
-      let obj = coerceToMap(opt.value);
+      let obj = opt.value;
 
       if(!cb) {
 
-        let type = 'put';
-        let ret = Map();
+        let batch = this.__db.batch();
 
-        this.__db.batch(this.__batchF(keyPath, obj, (curr, value, key) => {
+        if(typeof obj === 'object') {
 
-          ret = ret.setIn(key, value);
+          batch.del(keyPath.toArray());
 
-          curr.push({ type, key, value });
+          ret = this.__batchF(keyPath, obj, (curr, value, key) => {
+            batch.put(key, value);
+            return curr.setIn(key, value);
+          }, Map());
 
-          return curr;
+          batch.write((err) => !err ? resolve(ret) : reject(err));
 
-        }, []), (err) => !err ? resolve(ret) : reject(err));
+        } else {
+
+          let remove = true;
+
+          ret = obj;
+
+          this.__readReducer({ keyPath, remove }).then(() => {
+            batch.put(keyPath.toArray(), obj);
+            batch.write((err) => !err ? resolve(ret) : reject(err));
+          });
+
+        }
 
       } else {
 
