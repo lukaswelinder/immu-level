@@ -160,12 +160,16 @@ export default class Store {
       if(!opt || typeof opt === 'function')
         ret = cb, cb = opt, opt = {};
 
+      let batch = opt.remove ? this.__db.batch() : null;
+
       if(!cb) {
 
         let rootLength = opt.keyPath ?
           opt.keyPath.length || opt.keyPath.size : this.__root.size;
 
         cb = (curr, value, key) => {
+          if(opt.remove)
+            batch.del(key);
           let keyPathLength =  key.length - rootLength;
           let keyPath = keyPathLength ? key.slice(-keyPathLength) : null;
           if(!keyPath)
@@ -183,9 +187,12 @@ export default class Store {
 
       this.__stream(opt)
         .on('data', (data) => ret = cb(ret, data.value, data.key))
-
-        .on('end', () => resolve(ret))
-        .on('error', (err) => reject(err));
+        .on('end', () => {
+          if(opt.remove)
+            batch.write((err) => !err ? resolve(ret) : reject(err));
+          else
+            resolve(ret);
+        }).on('error', (err) => reject(err));
 
     });
 
