@@ -2,6 +2,10 @@
 const tape = require('tape');
 
 const immutable = require('immutable');
+const Map = immutable.Map;
+const List = immutable.List;
+const Set = immutable.Set;
+const fromJS = immutable.fromJS;
 
 const ImmuLevel = require('../dist/bundle.umd.js');
 
@@ -47,9 +51,99 @@ tape('Public Methods:', function(t) {
 
   t.ok(typeof immu.getIn === 'function', 'has \'.getIn()\' method');
 
+  t.ok(typeof immu.delete === 'function', 'has \'.delete()\' method');
+
+  t.ok(typeof immu.deleteIn === 'function', 'has \'.deleteIn()\' method');
+
   t.end();
 
 });
 
-db.close();
+tape('\'.set()\' Method:', function(t) {
+
+  t.plan(9);
+
+  let immu = ImmuLevel(db);
+
+  let testObject1 = { key: 'value' };
+
+  immu.set('testObject1', testObject1).then((val) => {
+
+    t.ok(val, 'accepts a JavaScript Object as input value');
+
+    t.ok(Map.isMap(val), 'returns an Immutable.js \'Map()\'');
+
+    t.deepEqual(val.toObject(), testObject1, 'return value is deeply equal to input');
+
+  });
+
+  let testMap1 = Map({ key: 'value' });
+
+  immu.set('testMap1', testMap1).then((val) => {
+
+    t.ok(val, 'accepts an Immutable.js \'Map()\' as input value');
+
+    t.ok(Map.isMap(val), 'returns an Immutable.js \'Map()\'');
+
+    t.ok(testMap1.equals(val), 'return value is deeply equal to input')
+
+  });
+
+  let testPrimitive1 = 'value';
+
+  immu.set('testPrimitive1', testPrimitive1).then((val) => {
+
+    t.ok(val, 'accepts primitive as input value');
+
+    t.ok(typeof val === 'string' || typeof val === 'number', 'returns primitive value');
+
+    t.equal(val, testPrimitive1, 'return value is equal to input');
+
+  });
+
+});
+
+tape('\'.setIn()\' Method:', function(t) {
+
+  t.plan(9);
+
+  let immu = ImmuLevel(db);
+
+  let testObject2 = { key: 'value' };
+
+  immu.setIn(['testObject2'], testObject2).then((val) => {
+
+    t.ok(val, 'accepts a JavaScript Object as input value');
+
+    t.ok(Map.isMap(val), 'returns an Immutable.js \'Map()\'');
+
+    t.deepEqual(val.toObject(), testObject2, 'return value is deeply equal to input');
+
+  });
+
+  let testMap2 = Map({ key: 'value' });
+
+  immu.setIn(['testMap2'], testMap2).then((val) => {
+
+    t.ok(val, 'accepts an Immutable.js \'Map()\' as input value');
+
+    t.ok(Map.isMap(val), 'returns an Immutable.js \'Map()\'');
+
+    t.ok(testMap2.equals(val), 'return value is deeply equal to input')
+
+  });
+
+  let testPrimitive2 = 'value';
+
+  immu.setIn(['testPrimitive2'], testPrimitive2).then((val) => {
+
+    t.ok(val, 'accepts primitive as input value');
+
+    t.ok(typeof val === 'string' || typeof val === 'number', 'returns primitive value');
+
+    t.equal(val, testPrimitive2, 'return value is equal to input');
+
+  });
+
+});
 
