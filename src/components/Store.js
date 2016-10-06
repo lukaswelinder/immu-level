@@ -153,6 +153,7 @@ export default class Store {
       if(!cb) {
 
         let batch = this.__db.batch();
+        let rootLength = keyPath.size;
 
         if(typeof obj === 'object') {
 
@@ -160,7 +161,9 @@ export default class Store {
 
           ret = mapKeyPaths(keyPath, obj, (curr, value, key) => {
             batch.put(key, value);
-            return curr.setIn(key, value);
+            let keyPathLength =  key.length - rootLength;
+            let keyPath = key.slice(-keyPathLength);
+            return curr.setIn(keyPath, value);
           }, Map(), 'reduce');
 
           batch.write((err) => !err ? resolve(ret) : reject(err));
