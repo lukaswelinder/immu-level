@@ -41,7 +41,7 @@ const immu = ImmuLevel(db);
 //   .then(val => console.log(val))
 //   .catch(err => console.log(err));
 
-immu.getIn(['another']).then(val => console.log(val)).catch(err => console.log(err));
+// immu.getIn([]).then(val => console.log(val)).catch(err => console.log(err));
 
 
 // immu.delete('next').then(val => console.log(val)).catch(err => console.log(err));

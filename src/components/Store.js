@@ -4,10 +4,10 @@ import LevelDefaults from 'levelup-defaults'
 import { Record, Map, List } from 'immutable'
 
 
-import { coerceToMap } from '../utils/mapHelpers'
+import { coerceToMap, mapKeyPaths } from '../utils/mapHelpers'
 import { coerceToList } from '../utils/listHelpers'
 
-
+// TODO: figure out why using a Record() is causing overflow
 // const StoreBase = Record({
 //   __db: null,
 //   __root: null,
@@ -45,64 +45,6 @@ export default class Store {
   __cat_root(keyPath) {
 
     return this.__root.concat(coerceToList(keyPath));
-
-  }
-
-  // TODO: dry out the batch method(s)
-
-  __batchF(keyPath, obj, cb, ret) {
-
-    if(typeof obj === 'function')
-      cb = obj, obj = keyPath, keyPath = List();
-
-    if(!ret)
-      ret = List();
-
-    if(!List.isList(keyPath))
-      keyPath = coerceToList(keyPath);
-
-    if(!Map.isMap(obj))
-      obj = coerceToMap(obj);
-
-    return obj.reduce((curr, val, key) => {
-
-      if(val && typeof val === 'object')
-        return this.__batchF(keyPath.push(key), val, cb, curr);
-
-      if(typeof cb === 'function')
-        return cb(curr, val, keyPath.push(key).toArray());
-
-      return curr.push({ key: keyPath.push(key).toArray(), value: val })
-
-    }, ret);
-
-  }
-
-  __batchR(keyPath, obj, cb, ret) {
-
-    if(typeof obj === 'function')
-      cb = obj, obj = keyPath, keyPath = List();
-
-    if(!ret)
-      ret = List();
-
-    if(!List.isList(keyPath))
-      keyPath = coerceToList(keyPath);
-
-    if(!Map.isMap(obj))
-      obj = coerceToMap(obj);
-
-    return obj.reduceRight((curr, val, key) => {
-
-      if(val && typeof val === 'object')
-        return this.__batchR(keyPath.push(key), val, cb, curr);
-
-      if(typeof cb === 'function')
-        return cb(curr, val, keyPath.push(key).toArray());
-
-      return curr.push({ key: keyPath.push(key).toArray(), value: val })
-
-    }, ret);
 
   }
 
@@ -216,10 +158,10 @@ export default class Store {
 
           batch.del(keyPath.toArray());
 
-          ret = this.__batchF(keyPath, obj, (curr, value, key) => {
+          ret = mapKeyPaths(keyPath, obj, (curr, value, key) => {
             batch.put(key, value);
             return curr.setIn(key, value);
-          }, Map());
+          }, Map(), 'reduce');
 
           batch.write((err) => !err ? resolve(ret) : reject(err));
 
@@ -239,9 +181,11 @@ export default class Store {
       } else {
 
         // TODO: see above ^^^
-        let method = opt.reverse ? '__batchR' : '__batchF';
+        let method = opt.reverse ? 'reduce' : 'reduceRight';
 
-        resolve(this[method](keyPath, obj, cb, ret));
+        ret = ret || Map();
+
+        resolve(mapKeyPaths(keyPath, obj, cb, ret, method));
 
       }
 

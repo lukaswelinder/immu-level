@@ -27,10 +27,6 @@ tape('Private Methods:', function(t) {
 
   t.ok(typeof immu.__stream === 'function', 'has \'.__stream()\' method');
 
-  t.ok(typeof immu.__batchF === 'function', 'has \'.__batchF()\' method');
-
-  t.ok(typeof immu.__batchR === 'function', 'has \'.__batchR()\' method');
-
   t.ok(typeof immu.__readReducer === 'function', 'has \'.__readReducer()\' method');
 
   t.ok(typeof immu.__writeReducer === 'function', 'has \'.__writeReducer()\' method');

@@ -26,8 +26,6 @@ export default class ImmuLevel extends Store {
 
   setIn(keyPath = List(), value = Map()) {
 
-    // TODO: remove current value at keyPath if argument 'val' is an object
-
     keyPath = this.__cat_root(keyPath);
 
     return this.__writeReducer({ keyPath, value });
