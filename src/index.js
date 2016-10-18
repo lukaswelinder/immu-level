@@ -40,7 +40,6 @@ export default class ImmuLevel extends Store {
 
   }
 
-  // TODO: refactor to use '__readReduce()' method on super
   getIn(keyPath = List()) {
 
     keyPath = this.__cat_root(keyPath);

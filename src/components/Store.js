@@ -7,14 +7,15 @@ import { Record, Map, List } from 'immutable'
 import { coerceToMap, mapKeyPaths } from '../utils/mapHelpers'
 import { coerceToList } from '../utils/listHelpers'
 
-// TODO: figure out why using a Record() is causing overflow
+// TODO: figure out why using a Record() is causing overflow and re-implement
+
 // const StoreBase = Record({
 //   __db: null,
 //   __root: null,
 //   __cache: null
 // });
 
-// TODO: extensively document/annotate internal methods (they are complicated)
+// TODO: extensively document/annotate internal methods
 
 export default class Store {
 
@@ -26,7 +27,7 @@ export default class Store {
     if(!(this instanceof Store))
       return new Store(db, opt);
 
-    // TODO: allow for cacheing of 'views' upon initialization based on opt
+    // TODO: outline purpose of '__cache'
 
     // let __db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
     // let __root = coerceToList(opt.root || []);
@@ -49,6 +50,7 @@ export default class Store {
   }
 
   // TODO: handle if opt is immutable.Map()
+
   __stream(opt) {
 
     // keyPath defaults to the value of 'this.__root'.
@@ -95,6 +97,7 @@ export default class Store {
   }
 
   // TODO: clarify and/or clean up the logic for optional args
+
   __readReducer(opt, cb, ret) {
 
     return new Promise((resolve,reject) => {
@@ -130,6 +133,8 @@ export default class Store {
       this.__stream(opt)
         .on('data', (data) => ret = cb(ret, data.value, data.key))
         .on('end', () => {
+          if(Map.isMap(ret) && !ret.size)
+            ret = undefined;
           if(opt.remove)
             batch.write((err) => !err ? resolve(ret) : reject(err));
           else
@@ -174,6 +179,8 @@ export default class Store {
 
           ret = obj;
 
+          // TODO: improve performance and reduce errors by combining delete/write ops
+
           this.__readReducer({ keyPath, remove }).then(() => {
             batch.put(keyPath.toArray(), obj);
             batch.write((err) => !err ? resolve(ret) : reject(err));
@@ -183,7 +190,6 @@ export default class Store {
 
       } else {
 
-        // TODO: see above ^^^
         let method = opt.reverse ? 'reduce' : 'reduceRight';
 
         ret = ret || Map();
