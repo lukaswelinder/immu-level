@@ -147,3 +147,40 @@ tape('\'.setIn()\' Method:', function(t) {
 
 });
 
+tape('\'.get()\' Method:', function(t) {
+
+  t.plan(7);
+
+  let immu = ImmuLevel(db);
+
+  let expectedMap = Map({ key: 'value' });
+  let expectedPrimitive = 'value';
+
+  immu.get('testObject1').then((val) => {
+
+    t.ok(val, 'returns value for existing key when input is an object');
+
+    t.ok(Map.isMap(val), 'returns an Immutable.js \'Map()\' when input is an object');
+
+    t.ok(val.equals(expectedMap), 'returns \'Map()\' deeply equal to input (as \'Map()\')');
+
+  });
+
+  immu.get('testPrimitive1').then((val) => {
+
+    t.ok(val, 'returns value for existing key when input is a primitive');
+
+    t.ok(typeof val === 'string', 'returns primitive when input is primitive');
+
+    t.equal(val, expectedPrimitive, 'returns value equivalent to input');
+
+  });
+
+  immu.get('invalidKey').then((val) => {
+
+    t.ok(typeof val === 'undefined', 'returns undefined if key does not exist');
+
+  });
+
+});
+
