@@ -1,13 +1,10 @@
-import bytewise from 'bytewise'
-import LevelDefaults from 'levelup-defaults'
+import bytewise from 'bytewise';
+import LevelDefaults from 'levelup-defaults';
+import { Record, Map, List } from 'immutable';
 
-import { Record, Map, List } from 'immutable'
 
-
-import { coerceToMap, mapKeyPaths } from '../utils/mapHelpers'
-import { coerceToList } from '../utils/listHelpers'
-
-// TODO: figure out why using a Record() is causing overflow and re-implement
+import { coerceToMap, mapKeyPaths } from '../utils/mapHelpers.js';
+import { coerceToList } from '../utils/listHelpers.js';
 
 // const StoreBase = Record({
 //   __db: null,
@@ -27,29 +24,21 @@ export default class Store {
     if(!(this instanceof Store))
       return new Store(db, opt);
 
-    // TODO: outline purpose of '__cache'
-
-    // let __db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
-    // let __root = coerceToList(opt.root || []);
-    // let __cache = coerceToMap(opt.cache);
-
-    // super({ __db, __root, __cache });
-
     this.__db = LevelDefaults(db, { keyEncoding: bytewise, valueEncoding: 'json' });
-    this.__root = coerceToList(opt.root || []);
+    this.__root = coerceToList(opt.root || new List());
     this.__cache = coerceToMap(opt.cache);
 
     return this;
 
   }
 
-  __cat_root(keyPath) {
+  __concat_root(keyPath) {
 
     return this.__root.concat(coerceToList(keyPath));
 
   }
 
-  // TODO: handle if opt is immutable.Map()
+  // TODO: consider handling immutable structures as arguments
 
   __stream(opt) {
 
@@ -119,12 +108,15 @@ export default class Store {
           let keyPath = keyPathLength ? key.slice(-keyPathLength) : null;
           if(!keyPath)
             return value;
+
           return curr.setIn(keyPath, value);
         };
 
         ret = Map();
 
-      } else if(!ret) {
+      }
+
+      if(!ret) {
 
         ret = Map();
 
