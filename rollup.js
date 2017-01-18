@@ -48,7 +48,8 @@ function rollupBundle() {
       format: 'es',
       // exports: 'named',
       moduleName: 'ImmuLevel',
-      sourceMap: true
+      sourceMap: true,
+      useStrict: true
     });
 
     let umd = bundle.write({
@@ -57,7 +58,8 @@ function rollupBundle() {
       // exports: 'named',
       globals: { immutable: 'immutable', level: 'level', levelup: 'levelup', bytewise: 'bytewise' },
       moduleName: 'ImmuLevel',
-      sourceMap: true
+      sourceMap: true,
+      useStrict: true
     });
 
     return Promise.all([es, umd]);

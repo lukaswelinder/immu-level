@@ -1,11 +1,17 @@
 'use strict';
 const tape = require('tape');
+const JSONsize = require('json-size');
+const data = require('./data/reddit_json.js');
+const dataSize = JSONsize(data);
+
 
 const immutable = require('immutable');
 const Map = immutable.Map;
 const List = immutable.List;
 const Set = immutable.Set;
 const fromJS = immutable.fromJS;
+
+
 
 const ImmuLevel = require('../dist/bundle.umd.js');
 
@@ -184,3 +190,74 @@ tape('\'.get()\' Method:', function(t) {
 
 });
 
+tape('\'.set()\' Benchmark (iterative):', function(t) {
+
+  t.plan(1);
+
+  let immu = ImmuLevel(db);
+  let transaction = [];
+  let count = data.length;
+  let start = Date.now();
+
+  for(let i = 0; i < count; i++)
+    transaction.push(immu.setIn(['benchmark_', i], data[i]));
+
+  Promise.all(transaction)
+
+    .then((res) => {
+      let end = Date.now();
+      t.ok(res, 'set ' + dataSize/1024 + ' kb in ' + (end - start) + 'ms')
+    })
+    // TODO: figure out error handling issues with 'tape'
+    .catch((err) => null);
+
+
+});
+
+// tape('\'.set()\' Benchmark (batched):', function(t) {
+//
+//   t.plan(1);
+//
+//   let immu = ImmuLevel(db);
+//   let start = Date.now();
+//
+//
+//   immu.set(data)
+//
+//     .then((res) => {
+//       let end = Date.now();
+//       t.ok(res, 'set ' + dataSize/1024 + ' kb in ' + (end - start) + 'ms')
+//     })
+//     // TODO: figure out error handling issues with 'tape'
+//     .catch((err) => null);
+//
+//
+// });
+
+// TODO: Resolve 'invalid keypath' in get, likely caused by falsy keys.
+
+tape('\'.get()\' Benchmark (iterative):', function(t) {
+
+  t.plan(1);
+
+  let immu = ImmuLevel(db);
+  let transaction = [];
+  let count = data.length;
+  let start = Date.now();
+
+
+  for(let i = 0; i < count; i++)
+    transaction.push(immu.getIn(['benchmark_', i]));
+
+  Promise.all(transaction)
+
+    .then((res) => {
+      let end = Date.now();
+      let size = JSONsize(res);
+      t.ok(res, 'get ' + size/1024 + ' kb in ' + (end - start) + 'ms')
+    })
+    // TODO: figure out error handling issues with 'tape'
+    .catch((err) => null);
+
+
+});

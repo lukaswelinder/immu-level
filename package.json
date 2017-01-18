@@ -39,6 +39,7 @@
     "gulp-sequence": "^0.4.5",
     "gulp-tape": "0.0.9",
     "gulp-watch": "^4.3.9",
+    "json-size": "^1.0.0",
     "level": "^1.4.0",
     "level-js": "^2.2.4",
     "rollup": "^0.34.10",
