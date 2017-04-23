@@ -156,12 +156,21 @@ export default class Store {
 
           batch.del(keyPath.toArray());
 
+          // BENCHMARKING:
+          let start = Date.now();
+          // ============
+
           ret = mapKeyPaths(keyPath, obj, (curr, value, key) => {
             batch.put(key, value);
             let keyPathLength =  key.length - rootLength;
             let keyPath = key.slice(-keyPathLength);
             return curr.setIn(keyPath, value);
           }, Map(), 'reduce');
+
+          // BENCHMARKING:
+          let end = Date.now();
+          console.log('mapped write keypaths in ' + (end - start) + 'ms');
+          // ============
 
           batch.write((err) => !err ? resolve(ret) : reject(err));
 

@@ -199,17 +199,23 @@ tape('\'.set()\' Benchmark (iterative):', function(t) {
   let count = data.length;
   let start = Date.now();
 
-  for(let i = 0; i < count; i++)
-    transaction.push(immu.setIn(['benchmark_', i], data[i]));
+  // for(let i = 0; i < count; i++)
+    immu.setIn(['benchmark_'], data)
+      .then((res) => {
+        let end = Date.now();
+        t.ok(res, 'set ' + dataSize/1024 + ' kb in ' + (end - start) + 'ms')
+      })
+      // TODO: figure out error handling issues with 'tape'
+      .catch((err) => null);
 
-  Promise.all(transaction)
-
-    .then((res) => {
-      let end = Date.now();
-      t.ok(res, 'set ' + dataSize/1024 + ' kb in ' + (end - start) + 'ms')
-    })
-    // TODO: figure out error handling issues with 'tape'
-    .catch((err) => null);
+  // Promise.all(transaction)
+  //
+  //   .then((res) => {
+  //     let end = Date.now();
+  //     t.ok(res, 'set ' + dataSize/1024 + ' kb in ' + (end - start) + 'ms')
+  //   })
+  //   // TODO: figure out error handling issues with 'tape'
+  //   .catch((err) => null);
 
 
 });

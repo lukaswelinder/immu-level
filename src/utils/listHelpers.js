@@ -1,18 +1,19 @@
 import { Map, List, Set, fromJS } from 'immutable'
 
 export function coerceToList(obj) {
+  if(!obj) return List();
 
-  if(List.isList(obj))
-    return obj;
+  switch(obj.constructor.name) {
+    case 'List':
+      return obj;
+    case 'Array':
+      return fromJS(obj);
+    case 'Map':
+      return obj.toList();
+    case 'Object':
+      return fromJS(obj).toList();
+    default:
+      return List();
+  }
 
-  if(Map.isMap(obj))
-    return obj.toList();
-
-  if(Array.isArray(obj))
-    return fromJS(obj);
-
-  if(obj && typeof obj === 'object')
-    return fromJS(obj).toList();
-
-  return List();
 }

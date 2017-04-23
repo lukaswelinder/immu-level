@@ -1,47 +1,76 @@
 'use strict';
 
-const immutable = require('immutable');
+let { Map, List, Set, Seq, fromJS } = require('immutable');
 
-const ImmuLevel = require('../dist/bundle.umd.js');
+const JSONsize = require('json-size');
 
-const levelup = require('level');
-const db = levelup('./sandbox/db');
+let reddit_data = require('../spec/data/reddit_json');
 
-const immu = ImmuLevel(db);
+let data_set = fromJS(reddit_data.concat(reddit_data)).toArray();
+let data_size = JSONsize(data_set);
 
-// let b = immu.__batchR([], { test: { case: 'hello', another: 'prop' } }, (curr, value, key) => {
-//   curr.push({ key, value });
-//   return curr;
-// }, []); //.then(val => console.log(val));
+// Should value be used for intersect comparison:
+const USE_VALUE = false;
+
+// keyPaths(val: any, root: List, coerce: boolean)
+// - Deeply maps iterable keypaths.
+const keyPaths = (val, root = new Seq()) => {
+
+  if(typeof val !== 'object')
+    return [USE_VALUE ? root.concat(val) : root];
+
+  return new Seq(val).reduce((curr, value, key) => {
+    return curr.concat(keyPaths(value, root.concat(key)));
+  }, new Seq());
+
+}
+
+// intersect(target: Iterable, ...args: Iterable)
+// - Returns target intersected on arg keypaths.
+const intersect = (target, ...args) => {
+
+  let commonKeyPaths = keyPaths(target).toSet();
+
+  for(let i = 0; i < args.length; i++)
+    commonKeyPaths = commonKeyPaths.subtract(keyPaths(args[i]));
+
+  return commonKeyPaths.reduce((curr, keyPath) => {
+    return curr.deleteIn(keyPath);
+  }, target);
+
+}
+
+// let expected = new fromJS({ test: { again: 'yes' }, hmm: { another: 'same' } });
 //
+// let m1 = new fromJS({ test: { again: 'yes' }, hmm: { another: 'same' }, notMatching: 'heh' });
+// let m2 = new fromJS({ test: { again: 'yes' }, hmm: { another: 'same' }, noMatch: 'nope' });
 //
-// console.log(b);
-
-// immu.__writeReducer({
-//   keyPath: [],
-//   value: { test: { case: 'hello', another: 'prop' } }
-// }).then(val => console.log(val)).catch(err => console.log(err));
-
-// immu.setIn(['another'], { next: null, test: { eyy: 'hello', buddy: 'friend' } })
-//   .then(val => console.log(val))
-//   .catch(err => console.log(err));
-
-// immu.setIn(['another'],  'testing')
-//   .then(val => console.log(val))
-//   .catch(err => console.log(err));
+// let result = intersect(m1,m2);
+//
+// result.equals(expected);
 
 
-// let m = immutable.Map();
+let start = Date.now();
+let result = intersect(...data_set);
+let end = Date.now();
 
-// let n = m.setIn(['eyy', null], 10);
+console.log(
+  'Parsed ' +
+  data_size/1000 +
+  'kb of data across ' +
+  data_set.length +
+  ' objects  in ' +
+  (end - start) +
+  'ms.'
+);
 
-// console.log(n);
+// console.log(paths.size + ' keyPaths parsed from data.');
 
-// immu.setIn([], n)
-//   .then(val => console.log(val))
-//   .catch(err => console.log(err));
-
-// immu.getIn([]).then(val => console.log(val)).catch(err => console.log(err));
+// console.log(JSON.stringify(result.toJS(), null, 2));
 
 
-// immu.delete('next').then(val => console.log(val)).catch(err => console.log(err));
+
+
+
+
+
